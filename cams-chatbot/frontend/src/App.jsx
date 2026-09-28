@@ -3,7 +3,10 @@ import axios from 'axios';
 import Sidebar from './components/Sidebar';
 import ChatArea from './components/ChatArea';
 
-const API_BASE = '/api/v1';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api/v1';
+const HEALTH_URL = API_BASE.startsWith('http') 
+  ? new URL('/health', API_BASE).origin + '/health'
+  : (API_BASE.replace('/api/v1', '') || '') + '/health';
 
 // Setup axios token interceptor
 axios.interceptors.request.use((config) => {
@@ -59,7 +62,7 @@ export default function App() {
 
   const fetchHealth = async () => {
     try {
-      const res = await axios.get('/health');
+      const res = await axios.get(HEALTH_URL);
       setDbInfo({
         connected: res.data.database_connected,
         tablesCount: res.data.database_tables_count
