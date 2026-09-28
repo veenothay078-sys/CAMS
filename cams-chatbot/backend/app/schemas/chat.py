@@ -40,3 +40,17 @@ class ChatQueryResponse(BaseModel):
     generated_sql: Optional[str] = None
     rows_retrieved: Optional[int] = 0
     execution_time_ms: Optional[float] = 0.0
+
+
+class ChatEngineRequest(BaseModel):
+    session_id: Optional[str] = None
+    message: str = Field(..., min_length=1)
+
+
+class ChatEngineResponse(BaseModel):
+    session_id: str
+    message: str
+    response_type: str = "text"
+    data: Optional[Any] = None
+    chart: Optional[Dict[str, Any]] = None
+    calculation: Optional[Dict[str, Any]] = None

@@ -43,6 +43,7 @@ class QueryExecutor:
             }
 
         except OperationalError as oe:
+            self.db.rollback()
             elapsed_ms = round((time.perf_counter() - start_time) * 1000, 2)
             err_msg = str(oe.orig) if hasattr(oe, 'orig') else str(oe)
             logger.error(f"Operational error during query execution ({elapsed_ms}ms): {err_msg}")
@@ -65,6 +66,7 @@ class QueryExecutor:
             }
 
         except DBAPIError as de:
+            self.db.rollback()
             elapsed_ms = round((time.perf_counter() - start_time) * 1000, 2)
             err_msg = str(de.orig) if hasattr(de, 'orig') else str(de)
             logger.error(f"DBAPI error during query execution: {err_msg}")
@@ -78,6 +80,7 @@ class QueryExecutor:
             }
 
         except Exception as e:
+            self.db.rollback()
             elapsed_ms = round((time.perf_counter() - start_time) * 1000, 2)
             logger.error(f"Unexpected query execution error: {e}")
             return {

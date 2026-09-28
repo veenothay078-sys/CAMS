@@ -5,12 +5,12 @@ from app.security.rbac import UserRole
 MAX_QUERY_ROW_LIMIT = 100
 STATEMENT_TIMEOUT_MS = 10000
 
-# Strictly forbidden SQL keywords that modify schema or data
+# Strictly forbidden SQL keywords that modify schema or data, or permit UNION injection
 FORBIDDEN_KEYWORDS: Set[str] = {
     "INSERT", "UPDATE", "DELETE", "DROP", "ALTER", "TRUNCATE",
     "CREATE", "GRANT", "REVOKE", "MERGE", "REPLACE", "CALL",
     "VACUUM", "ANALYZE", "EXPLAIN", "COPY", "LOCK", "COMMENT",
-    "DISCARD", "RESET", "SET", "EXEC", "EXECUTE"
+    "DISCARD", "RESET", "SET", "EXEC", "EXECUTE", "UNION"
 }
 
 # Dangerous PostgreSQL functions and SQLi bypass constructs
@@ -24,7 +24,10 @@ FORBIDDEN_PATTERNS: List[str] = [
     r"current_setting\s*\(",       # Server configuration sniffing
     r"system\s*\(",                # OS command execution
     r"--\s*",                      # Single line comment bypass
-    r"/\*.*?\*/"                   # Multi-line comment bypass
+    r"/\*.*?\*/",                  # Multi-line comment bypass
+    r"'\s*or\s+['\d\w]+\s*=\s*['\d\w]+",  # Tautology injection (e.g. 1' OR '1'='1)
+    r"\bor\s+\d+\s*=\s*\d+\b",     # Tautology injection (e.g. OR 1=1)
+    r"\bunion\s+(?:all\s+)?select\b"  # Union injection
 ]
 
 # Sensitive columns that must be masked or excluded from general queries
@@ -74,14 +77,16 @@ ROLE_TABLE_PERMISSIONS: Dict[str, Set[str]] = {
     UserRole.HOD.value: ALLOWED_CHATBOT_TABLES - {"fee_records", "payments"},
     UserRole.FACULTY.value: {
         "students", "courses", "sections", "subject_allocations", "attendance", "attendance_corrections",
-        "timetable", "internal_marks", "marks", "faculty_profiles", "leaves", "notices", "academic_years", "degrees", "users"
+        "timetable", "internal_marks", "marks", "exams", "exam_hall_tickets", "exam_seating_arrangements",
+        "faculty_profiles", "leaves", "notices", "academic_years", "academic_calendar_events", "academic_calendars", "degrees", "users"
     },
     UserRole.STUDENT.value: {
         "students", "courses", "sections", "attendance", "attendance_corrections",
-        "timetable", "internal_marks", "marks", "fee_records", "fee_structure", "notices", "academic_years", "degrees", "faculty_profiles", "users"
+        "timetable", "internal_marks", "marks", "exams", "exam_hall_tickets", "exam_seating_arrangements",
+        "fee_records", "fee_structure", "notices", "academic_years", "academic_calendar_events", "academic_calendars", "degrees", "faculty_profiles", "users"
     },
     UserRole.PARENT.value: {
-        "students", "parent_student_map", "attendance", "internal_marks", "marks", "fee_records", "fee_structure", "notices", "academic_years"
+        "students", "parent_student_map", "attendance", "internal_marks", "marks", "exams", "fee_records", "fee_structure", "notices", "academic_years", "academic_calendar_events"
     }
 }
 

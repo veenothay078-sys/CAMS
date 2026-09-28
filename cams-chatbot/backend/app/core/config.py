@@ -26,10 +26,13 @@ class Settings(BaseModel):
     SECRET_KEY: str = os.getenv("SECRET_KEY", "cams-chatbot-development-secret-key-change-in-production")
     ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))
 
-    # NVIDIA NIM
-    NVIDIA_NIM_API_KEY: str = os.getenv("NVIDIA_NIM_API_KEY", "")
+    # NVIDIA NIM Configuration
+    NVIDIA_API_KEY: str = os.getenv("NVIDIA_API_KEY", os.getenv("NVIDIA_NIM_API_KEY", ""))
+    NVIDIA_NIM_API_KEY: str = os.getenv("NVIDIA_API_KEY", os.getenv("NVIDIA_NIM_API_KEY", ""))
     NVIDIA_NIM_BASE_URL: str = os.getenv("NVIDIA_NIM_BASE_URL", "https://integrate.api.nvidia.com/v1")
-    NVIDIA_NIM_MODEL: str = os.getenv("NVIDIA_NIM_MODEL", "meta/llama-3.1-70b-instruct")
+    NVIDIA_MODEL: str = os.getenv("NVIDIA_MODEL", os.getenv("NVIDIA_NIM_MODEL", "meta/llama-3.1-70b-instruct"))
+    NVIDIA_NIM_MODEL: str = os.getenv("NVIDIA_MODEL", os.getenv("NVIDIA_NIM_MODEL", "meta/llama-3.1-70b-instruct"))
+    NVIDIA_NIM_TIMEOUT_SEC: float = float(os.getenv("NVIDIA_NIM_TIMEOUT_SEC", "15.0"))
 
     # E2B Sandbox
     E2B_API_KEY: str = os.getenv("E2B_API_KEY", "")

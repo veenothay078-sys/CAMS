@@ -65,3 +65,46 @@ class SafeQueryService:
             "tables_accessed": tables,
             "error": None
         }
+
+    def execute_plan(
+        self,
+        plan: Any,
+        user_role: str = "STUDENT"
+    ) -> Dict[str, Any]:
+        """
+        Translates a structured QueryPlan into parameterized SQL and executes it
+        strictly through the Safe Query Layer.
+        Never bypasses QueryValidator or role-based security policies.
+        """
+        if getattr(plan, "requires_clarification", False):
+            return {
+                "success": True,
+                "row_count": 0,
+                "columns": [],
+                "data": [],
+                "execution_time_ms": 0.0,
+                "tables_accessed": getattr(plan, "tables", []),
+                "is_clarification": True,
+                "clarification_prompt": getattr(plan, "clarification_prompt", "Please provide more details."),
+                "error": None
+            }
+
+        from app.chatbot.plan_query_builder import PlanQueryBuilder
+        sql, params = PlanQueryBuilder.build_query(plan)
+
+        if not sql:
+            return {
+                "success": False,
+                "row_count": 0,
+                "columns": [],
+                "data": [],
+                "execution_time_ms": 0.0,
+                "tables_accessed": getattr(plan, "tables", []),
+                "is_clarification": False,
+                "error": "Failed to construct valid database query from query plan."
+            }
+
+        result = self.execute_safe_query(sql, params=params, user_role=user_role)
+        result["is_clarification"] = False
+        result["clarification_prompt"] = None
+        return result

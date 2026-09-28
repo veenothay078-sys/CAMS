@@ -1,18 +1,70 @@
 import uuid
-from typing import List, Dict, Any
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import List, Dict, Any, Optional
+from fastapi import APIRouter, Depends, HTTPException, status, Header
+from fastapi.security import HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from app.database.session import get_db
 from app.models.chat import ChatSession, ChatMessage
 from app.schemas.chat import (
     ChatSessionCreate, ChatSessionResponse,
     ChatMessageCreate, ChatMessageResponse,
-    ChatQueryResponse
+    ChatQueryResponse, ChatEngineRequest, ChatEngineResponse
 )
-from app.security.auth import get_current_user
+from app.security.auth import get_current_user, security_bearer, decode_access_token
 from app.services.query_orchestrator import QueryOrchestrator
+from app.chatbot.chat_service import ChatService
 
 router = APIRouter()
+
+
+def resolve_chat_user_context(
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security_bearer),
+    x_user_role: Optional[str] = Header(None, alias="X-User-Role"),
+    x_roll_no: Optional[str] = Header(None, alias="X-Roll-No"),
+    x_student_id: Optional[str] = Header(None, alias="X-Student-Id"),
+    x_full_name: Optional[str] = Header(None, alias="X-Full-Name"),
+) -> Dict[str, Any]:
+    """Resolves caller role and identity from JWT or custom request headers for development/testing."""
+    context: Dict[str, Any] = {"role": "STUDENT"}
+    if credentials:
+        try:
+            token_data = decode_access_token(credentials.credentials)
+            context.update(token_data)
+        except Exception:
+            pass
+
+    if x_user_role:
+        context["role"] = x_user_role.upper()
+    if x_roll_no:
+        context["roll_no"] = x_roll_no
+    if x_student_id:
+        context["student_id"] = x_student_id
+    if x_full_name:
+        context["full_name"] = x_full_name
+
+    return context
+
+
+@router.post("", response_model=ChatEngineResponse)
+@router.post("/", response_model=ChatEngineResponse)
+def chat_query(
+    request: ChatEngineRequest,
+    db: Session = Depends(get_db),
+    user_context: Dict[str, Any] = Depends(resolve_chat_user_context)
+):
+    """
+    Core CAMS chatbot query endpoint:
+    Converts natural language user question into controlled structured query intent,
+    enforces authorization, queries PostgreSQL through Safe Query Layer,
+    and returns structured response.
+    """
+    service = ChatService(db)
+    result = service.process_message(
+        session_id=request.session_id,
+        message=request.message,
+        user_context=user_context
+    )
+    return ChatEngineResponse(**result)
 
 
 @router.post("/sessions", response_model=ChatSessionResponse)
