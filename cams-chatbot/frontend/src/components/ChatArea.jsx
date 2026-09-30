@@ -1,28 +1,20 @@
 import React, { useRef, useEffect } from 'react';
-import { Send, AlertTriangle, ShieldCheck, X, Menu, Trash2, User, RefreshCw } from 'lucide-react';
+import { ArrowUp, AlertTriangle, X } from 'lucide-react';
 import MessageItem from './MessageItem';
 import EmptyState from './EmptyState';
 
 export default function ChatArea({
   currentSession,
-  messages,
+  messages = [],
   input,
   setInput,
   onSendMessage,
   onRetry,
-  onClearMessages,
   loading,
   error,
-  onClearError,
-  userProfile,
-  demoUsers,
-  onSwitchUser,
-  onLogout,
-  dbInfo,
-  onToggleSidebar
+  onClearError
 }) {
   const messagesEndRef = useRef(null);
-  const inputRef = useRef(null);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -42,103 +34,46 @@ export default function ChatArea({
     }
   };
 
-  const getRoleBadgeStyle = (role) => {
-    switch (role?.toUpperCase()) {
-      case 'ADMIN': return { background: '#f3e8ff', color: '#6b21a8', border: '1px solid #d8b4fe' };
-      case 'FACULTY': return { background: '#ccfbf1', color: '#115e59', border: '1px solid #99f6e4' };
-      case 'STUDENT': return { background: '#dbeafe', color: '#1e40af', border: '1px solid #bfdbfe' };
-      default: return { background: '#f1f5f9', color: '#475569', border: '1px solid #cbd5e1' };
-    }
-  };
-
   return (
-    <main className="chat-main" role="main" aria-label="CAMS Chat Area">
-      {/* Top Navbar */}
-      <header className="top-navbar">
-        <div className="navbar-left">
-          {/* Mobile hamburger menu toggle */}
-          <button 
-            className="mobile-menu-btn" 
-            onClick={onToggleSidebar}
-            aria-label="Open sidebar menu"
-            title="Menu"
-          >
-            <Menu size={20} />
-          </button>
-
-          <div className="navbar-title">
-            <span className="nav-heading" title={currentSession ? currentSession.title : 'CAMS Assistant'}>
-              {currentSession ? currentSession.title : 'CAMS Assistant'}
-            </span>
-            <span className="badge-tag" title="Protected by Safe SQL Parser">
-              <ShieldCheck size={11} style={{ marginRight: '3px' }} />
-              Safe SQL
-            </span>
-          </div>
-        </div>
-
-        <div className="navbar-controls">
-          {messages.length > 0 && (
-            <button 
-              className="navbar-action-btn"
-              onClick={onClearMessages}
-              title="Clear messages in this conversation"
-              aria-label="Clear conversation"
-            >
-              <Trash2 size={14} />
-              <span className="hide-mobile">Clear</span>
-            </button>
-          )}
-
-          <div className="user-profile-badge" style={getRoleBadgeStyle(userProfile?.role)}>
-            <User size={13} />
-            <span className="user-role-text">{userProfile?.role || 'STUDENT'}</span>
-            <span className="user-email-pill hide-mobile">({userProfile?.email})</span>
-          </div>
-        </div>
-      </header>
-
+    <div className="ai-workspace-container" role="region" aria-label="CAMS Intelligence">
       {/* Error Banner */}
       {error && (
-        <div className="error-banner" role="alert">
+        <div style={{ background: 'var(--status-danger-bg)', border: '1px solid var(--status-danger)', borderRadius: 'var(--radius-md)', padding: '0.75rem 1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem', color: 'var(--status-danger)', fontSize: '0.84rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <AlertTriangle size={16} aria-hidden="true" />
+            <AlertTriangle size={15} />
             <span>{error}</span>
           </div>
-          <button 
-            onClick={onClearError} 
-            className="error-close-btn"
-            aria-label="Dismiss error"
-          >
+          <button onClick={onClearError} style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--status-danger)' }}>
             <X size={14} />
           </button>
         </div>
       )}
 
       {/* Messages Scroll Area */}
-      <div className="messages-container" role="log" aria-live="polite" aria-label="Conversation Messages">
+      <div className="chat-messages-scroll" role="log">
         {messages.length === 0 ? (
-          <EmptyState onSelectPrompt={(prompt) => {
-            setInput(prompt);
-            inputRef.current?.focus();
-          }} />
+          <EmptyState onSelectPrompt={(prompt) => onSendMessage(prompt)} />
         ) : (
-          messages.map((msg) => (
+          messages.map((msg, idx) => (
             <MessageItem 
-              key={msg.id} 
+              key={msg.id || idx} 
               message={msg} 
-              onRetry={() => onRetry(msg.lastQuery)}
+              onRetry={onRetry} 
+              onSelectOption={onSendMessage}
             />
           ))
         )}
 
-        {/* Loading Indicator */}
+        {/* Subtle Three-Line Skeleton Loading */}
         {loading && (
-          <div className="message-wrapper">
-            <div className="message-avatar avatar-assistant" aria-hidden="true">CA</div>
-            <div className="loading-indicator">
-              <div className="spinner" aria-hidden="true"></div>
-              <span>Querying CAMS PostgreSQL & analyzing via Safe Query Engine...</span>
+          <div className="message-editorial-assistant" style={{ opacity: 0.9 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.55rem' }}>
+              <div style={{ height: '12px', width: '85%', backgroundColor: 'var(--color-soft-blue)', borderRadius: '4px' }} />
+              <div style={{ height: '12px', width: '65%', backgroundColor: 'var(--color-soft-blue)', borderRadius: '4px' }} />
+              <div style={{ height: '12px', width: '40%', backgroundColor: 'var(--color-soft-blue)', borderRadius: '4px' }} />
+            </div>
+            <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', marginTop: '0.25rem', fontWeight: 500 }}>
+              Grounded in PostgreSQL • Querying database...
             </div>
           </div>
         )}
@@ -146,44 +81,29 @@ export default function ChatArea({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Bottom Input Area */}
-      <footer className="input-area-container">
-        <form className="input-form" onSubmit={handleSubmit} aria-label="Chat input form">
-          <div className="input-box-wrapper">
-            <textarea
-              ref={inputRef}
-              rows={1}
-              className="chat-input"
-              placeholder="Ask about student profiles, attendance %, marks, courses, timetable, faculty, fees..."
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              disabled={loading}
-              id="input-chat-query"
-              aria-label="Message input"
-            />
-            <button
-              type="submit"
-              className="send-button"
-              disabled={!input.trim() || loading}
-              id="btn-send-query"
-              aria-label="Send message"
-              title="Send (Enter)"
-            >
-              {loading ? (
-                <RefreshCw size={14} className="spin-icon" />
-              ) : (
-                <Send size={14} />
-              )}
-              <span className="hide-mobile">Send</span>
-            </button>
-          </div>
-          <div className="input-footnote">
-            <span>Read-Only SQL access • 122 tables verified • RBAC enforced</span>
-            <span className="hide-mobile">Shift + Enter for new line • Enter to send</span>
-          </div>
+      {/* AI Chat Input Bar */}
+      <div className="ai-input-bar-container">
+        <form onSubmit={handleSubmit} className="ai-input-wrapper">
+          <input
+            type="text"
+            className="ai-text-input"
+            placeholder="Ask anything about students, courses, attendance, or timetable..."
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            disabled={loading}
+          />
+          <button 
+            type="submit" 
+            className="ai-send-btn" 
+            disabled={!input.trim() || loading}
+            title="Send Inquiry"
+            aria-label="Send Inquiry"
+          >
+            <ArrowUp size={16} />
+          </button>
         </form>
-      </footer>
-    </main>
+      </div>
+    </div>
   );
 }

@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.endpoints import health, auth, chat, query, data
+from app.api.v1.endpoints import health, auth, chat, query, data, attendance
 
 api_router = APIRouter()
 
@@ -8,3 +8,4 @@ api_router.include_router(auth.router, prefix="/auth", tags=["Authentication & R
 api_router.include_router(chat.router, prefix="/chat", tags=["Conversational Chatbot"])
 api_router.include_router(query.router, prefix="/query", tags=["Safe Query Engine"])
 api_router.include_router(data.router, prefix="/data", tags=["Controlled Data Access"])
+api_router.include_router(attendance.router, prefix="/attendance", tags=["Attendance Management"])

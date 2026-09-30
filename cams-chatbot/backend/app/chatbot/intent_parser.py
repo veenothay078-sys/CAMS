@@ -91,7 +91,7 @@ class TemporaryIntentParser(IntentParserInterface):
         # 8. Notices & Circulars
         (
             "notices",
-            re.compile(r"\b(notice|notices|announcement|announcements|circular|circulars|bulletin)\b", re.IGNORECASE)
+            re.compile(r"\b(notice|notices|notification|notifications|announcement|announcements|circular|circulars|bulletin)\b", re.IGNORECASE)
         ),
         # 9. Academic Calendar
         (
@@ -101,7 +101,7 @@ class TemporaryIntentParser(IntentParserInterface):
         # 10. Student Information
         (
             "student_information",
-            re.compile(r"\b(student|students|profile|roll no|roll number|enrollment|who is|details of)\b", re.IGNORECASE)
+            re.compile(r"\b(student|students|user|users|profile|roll no|roll number|enrollment|who is|details of)\b", re.IGNORECASE)
         ),
     ]
 

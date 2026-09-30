@@ -1,75 +1,43 @@
 import React from 'react';
-import { School, UserCheck, Award, Calendar, BookOpen, Clock, AlertCircle } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 
-const SUGGESTIONS = [
-  {
-    icon: School,
-    title: 'Student Profiles',
-    prompt: 'Show student academic profile and roll numbers',
-    domain: 'student'
-  },
-  {
-    icon: UserCheck,
-    title: 'Attendance Records',
-    prompt: 'Show recent attendance records and status',
-    domain: 'attendance'
-  },
-  {
-    icon: Award,
-    title: 'Internal Marks',
-    prompt: 'Show internal examination marks and scores',
-    domain: 'marks'
-  },
-  {
-    icon: BookOpen,
-    title: 'Course Catalog',
-    prompt: 'List courses offered across semesters',
-    domain: 'courses'
-  },
-  {
-    icon: Clock,
-    title: 'Class Timetable',
-    prompt: 'What is the weekly schedule and classroom timetable?',
-    domain: 'timetable'
-  },
-  {
-    icon: AlertCircle,
-    title: 'Campus Notices',
-    prompt: 'Show published official college notices',
-    domain: 'notices'
-  }
+const SUGGESTED_PROMPTS = [
+  "Show today's timetable",
+  "Students below 75% attendance",
+  "Average marks by subject",
+  "Show all courses",
+  "List all faculty members and designations",
+  "Attendance distribution barchart"
 ];
 
 export default function EmptyState({ onSelectPrompt }) {
   return (
-    <div className="empty-state">
-      <div className="empty-icon">
-        <School size={24} />
+    <div className="ai-empty-state-editorial" role="region" aria-label="CAMS Intelligence">
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', marginBottom: '0.35rem' }}>
+        <div style={{ width: '32px', height: '32px', borderRadius: '8px', backgroundColor: 'var(--color-soft-blue)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--color-primary-royal)' }}>
+          <Sparkles size={18} />
+        </div>
+        <h1 className="ai-empty-title">CAMS Intelligence</h1>
       </div>
-      <h2 className="empty-title">CAMS AI Information System</h2>
-      <p className="empty-desc">
-        Ask natural-language questions directly over the College Academic Management System database.
-        Queries are securely evaluated and executed through the Safe Query Layer.
+      <p className="ai-empty-subtitle">
+        Ask questions about students, courses, attendance, schedules and academic records.
       </p>
 
-      <div className="domain-grid">
-        {SUGGESTIONS.map((s, idx) => {
-          const Icon = s.icon;
-          return (
-            <div
-              key={idx}
-              className="domain-card"
-              onClick={() => onSelectPrompt(s.prompt)}
-              id={`empty-card-${s.domain}`}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                <Icon size={14} color="#1e3a8a" />
-                <div className="domain-card-title">{s.title}</div>
-              </div>
-              <div className="domain-card-prompt">{s.prompt}</div>
-            </div>
-          );
-        })}
+      <div className="ai-prompt-list">
+        <div style={{ fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '0.25rem' }}>
+          Suggested Inquiries
+        </div>
+        {SUGGESTED_PROMPTS.map((prompt, idx) => (
+          <button
+            key={idx}
+            className="ai-prompt-link-row"
+            onClick={() => onSelectPrompt(prompt)}
+            type="button"
+          >
+            <span>{prompt}</span>
+            <span className="ai-prompt-arrow">→</span>
+          </button>
+        ))}
       </div>
     </div>
   );

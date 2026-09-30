@@ -67,22 +67,19 @@ class IntentQueryBuilder:
         # 2. ATTENDANCE DOMAIN
         elif domain == "attendance":
             sql = """
-                SELECT a.date, a.hour, c.name AS subject_name, sec.section_name,
-                       a.approval_status
-                FROM attendance a
-                JOIN courses c ON a.subject_id = c.id
-                JOIN sections sec ON a.section_id = sec.id
-                WHERE a.is_deleted = false
+                SELECT sa.date, sa.status, u.full_name AS faculty_name, sa.source
+                FROM staff_attendance sa
+                JOIN users u ON sa.faculty_id = u.id
+                WHERE sa.is_deleted = false
             """
             if role == "FACULTY":
-                # Faculty views attendance for their own classes
-                sql += " AND a.faculty_id = :user_id"
+                sql += " AND sa.faculty_id = :user_id"
                 params["user_id"] = user_id
             if "date" in entities:
-                sql += " AND a.date = :query_date"
+                sql += " AND sa.date = :query_date"
                 params["query_date"] = entities["date"]
 
-            sql += " ORDER BY a.date DESC"
+            sql += " ORDER BY sa.date DESC LIMIT 50"
             return sql.strip(), params
 
         # 3. MARKS & INTERNAL ASSESSMENT DOMAIN
@@ -126,19 +123,20 @@ class IntentQueryBuilder:
         # 5. TIMETABLE DOMAIN
         elif domain == "timetable":
             sql = """
-                SELECT t.weekday, t.start_time, t.end_time, t.room,
-                       c.name AS subject_name, sec.section_name, u.full_name AS faculty_name
+                SELECT CAST(t.weekday AS TEXT) as weekday, t.start_time, t.end_time, t.room,
+                       c.name AS subject_name, COALESCE(sec.section_name, 'Section A') as section_name,
+                       COALESCE(u.full_name, 'Faculty') AS faculty_name
                 FROM timetable t
                 JOIN courses c ON t.subject_id = c.id
-                JOIN sections sec ON t.section_id = sec.id
-                JOIN users u ON t.faculty_id = u.id
+                LEFT JOIN sections sec ON t.section_id = sec.id
+                LEFT JOIN users u ON t.faculty_id = u.id
                 WHERE t.is_deleted = false
             """
             if role == "FACULTY":
                 sql += " AND t.faculty_id = :user_id"
                 params["user_id"] = user_id
             if "weekday" in entities:
-                sql += " AND t.weekday = :weekday"
+                sql += " AND UPPER(CAST(t.weekday AS TEXT)) = UPPER(:weekday)"
                 params["weekday"] = entities["weekday"].upper()
 
             sql += " ORDER BY t.weekday, t.start_time"

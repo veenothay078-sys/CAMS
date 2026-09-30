@@ -52,6 +52,13 @@ class ResultProcessor:
         intent = plan.intent
 
         if intent == "student_information":
+            # Check if this is a user table list or multiple records
+            if "role" in data[0] or "user_id" in data[0]:
+                return f"I found {len(data)} user records matching your request.", "table", data
+
+            if len(data) > 1 or plan.output_type == "table":
+                return f"I found {len(data)} student records matching your request.", "table", data
+
             student = data[0]
             name = student.get("full_name") or student.get("roll_no") or "Student"
             roll = student.get("roll_no", "N/A")
@@ -67,7 +74,7 @@ class ResultProcessor:
             )
             if email:
                 msg += f" | Email: {email}"
-            return msg, "text", data
+            return msg, "table" if plan.output_type == "table" else "text", data
 
         elif intent == "attendance":
             # If records exist, calculate aggregate

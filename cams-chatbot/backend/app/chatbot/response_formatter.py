@@ -22,13 +22,7 @@ class ResponseFormatter:
         chart: Optional[Dict[str, Any]] = None,
         calculation: Optional[Dict[str, Any]] = None
     ) -> Dict[str, Any]:
-        formatted_message = message
-
-        # If table response, format markdown table into message as well for text-only clients
-        if response_type == "table" and isinstance(data, list) and len(data) > 0:
-            md_table = cls._build_markdown_table(data)
-            if md_table:
-                formatted_message = f"{message}\n\n{md_table}"
+        formatted_message = message.split('|')[0].strip() if '|' in message else message
 
         res = {
             "session_id": session_id,

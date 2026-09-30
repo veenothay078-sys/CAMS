@@ -75,6 +75,11 @@ class QueryValidator:
 
     @classmethod
     def _enforce_limit(cls, sql: str, max_limit: int) -> str:
+        # 1. Parameterized LIMIT clause check (e.g. LIMIT :limit or LIMIT :param)
+        if re.search(r"\bLIMIT\s+(?::[a-zA-Z0-9_]+|\?|\$\d+)\b", sql, re.IGNORECASE):
+            return sql
+
+        # 2. Literal integer LIMIT clause check
         limit_match = re.search(r"\bLIMIT\s+(\d+)\b", sql, re.IGNORECASE)
         if limit_match:
             existing_limit = int(limit_match.group(1))

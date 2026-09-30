@@ -1,140 +1,204 @@
-import React from 'react';
-import { MessageSquarePlus, Trash2, Database, ShieldCheck, UserCheck, X, LogOut, ChevronDown } from 'lucide-react';
+import React, { useState } from 'react';
+import { 
+  LayoutDashboard, 
+  Sparkles, 
+  BookOpen, 
+  Users, 
+  UserCheck, 
+  Calendar, 
+  FileText, 
+  Bell, 
+  Plus, 
+  Trash2, 
+  ChevronLeft, 
+  ChevronRight, 
+  LogOut 
+} from 'lucide-react';
 
 export default function Sidebar({
-  sessions,
+  activeTab,
+  onSelectTab,
+  sessions = [],
   currentSessionId,
   onSelectSession,
   onNewSession,
   onDeleteSession,
   dbInfo,
-  userProfile,
-  demoUsers,
-  onSwitchUser,
-  onLogout,
   isOpen,
-  onClose
+  onClose,
+  isCollapsed,
+  onToggleCollapse,
+  currentUser,
+  onLogout
 }) {
-  const getRoleBadgeColor = (role) => {
-    switch (role?.toUpperCase()) {
-      case 'ADMIN': return '#7c3aed';
-      case 'FACULTY': return '#0d9488';
-      case 'STUDENT': return '#2563eb';
-      default: return '#64748b';
-    }
-  };
+  const [hoveredTab, setHoveredTab] = useState(null);
+
+  const navItems = [
+    { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+    { id: 'ai_assistant', label: 'AI Assistant', icon: Sparkles },
+    { id: 'courses', label: 'Courses', icon: BookOpen },
+    { id: 'users', label: 'Students', icon: Users },
+    { id: 'attendance', label: 'Attendance', icon: UserCheck },
+    { id: 'timetable', label: 'Timetable', icon: Calendar },
+    { id: 'leaves', label: 'Leaves', icon: FileText },
+    { id: 'notifications', label: 'Notifications', icon: Bell },
+  ];
+
+  const userInitials = currentUser?.full_name 
+    ? currentUser.full_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
+    : 'AD';
 
   return (
-    <aside className={`sidebar ${isOpen ? 'sidebar-open' : ''}`} aria-label="Chat Sessions & Navigation">
-      <div className="sidebar-header">
-        <div className="sidebar-brand">
-          <div className="brand-icon" aria-hidden="true">CA</div>
-          <div>
-            <div className="brand-title">CAMS AI Chatbot</div>
-            <div className="brand-subtitle">College Management System</div>
+    <aside 
+      className={`cams-sidebar ${isOpen ? 'sidebar-mobile-open' : ''} ${isCollapsed ? 'sidebar-collapsed' : 'sidebar-expanded'}`} 
+      aria-label="CAMS Navigation"
+    >
+      {/* 1. Top Brand Header */}
+      <div className="sidebar-header-brand">
+        <div className="sidebar-brand-box" onClick={() => onSelectTab('overview')}>
+          <div className="brand-logo-mark" aria-hidden="true">
+            <span>C</span>
           </div>
+          {!isCollapsed && (
+            <div className="brand-text-col">
+              <span className="brand-name">CAMS</span>
+              <span className="brand-sub">AI DATA ASSISTANT</span>
+            </div>
+          )}
         </div>
-        {/* Mobile Close Button */}
+
         <button 
-          className="mobile-close-btn" 
-          onClick={onClose}
-          aria-label="Close sidebar navigation"
+          className="sidebar-collapse-toggle-btn"
+          onClick={onToggleCollapse}
+          title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
-          <X size={18} />
+          {isCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
         </button>
       </div>
 
-      {/* User Switcher Quick Card */}
-      <div className="sidebar-user-card">
-        <div className="user-card-header">
-          <span className="user-card-label">Active Role & Context</span>
-          <span 
-            className="user-role-pill" 
-            style={{ backgroundColor: getRoleBadgeColor(userProfile?.role) }}
-          >
-            {userProfile?.role || 'STUDENT'}
-          </span>
-        </div>
-        <div className="user-email-text" title={userProfile?.email}>
-          {userProfile?.full_name || userProfile?.email || 'User'}
-        </div>
-
-        {/* Quick Role Switcher */}
-        <div className="role-switch-container">
-          <label htmlFor="role-select" className="sr-only">Switch User Role</label>
-          <select 
-            id="role-select"
-            className="role-select-dropdown"
-            value={userProfile?.email}
-            onChange={(e) => onSwitchUser(e.target.value)}
-          >
-            {demoUsers.map((u) => (
-              <option key={u.email} value={u.email}>
-                {u.role}: {u.full_name || u.email}
-              </option>
-            ))}
-          </select>
-        </div>
+      {/* 2. New Inquiry Action */}
+      <div className="sidebar-action-area">
+        <button 
+          className="cams-sidebar-new-btn"
+          onClick={() => {
+            onNewSession && onNewSession();
+            onSelectTab('ai_assistant');
+          }}
+          title="New AI Inquiry"
+        >
+          <Plus size={15} />
+          {!isCollapsed && <span>New Inquiry</span>}
+        </button>
       </div>
 
-      <button className="new-chat-btn" onClick={onNewSession} id="btn-new-chat" aria-label="Start a new conversation">
-        <MessageSquarePlus size={16} aria-hidden="true" />
-        <span>New Conversation</span>
-      </button>
-
-      <div className="sidebar-history" role="navigation" aria-label="Conversation History">
-        <div className="history-label">Recent Inquiries</div>
-        {sessions.length === 0 ? (
-          <div className="empty-history-text">
-            No previous sessions
-          </div>
-        ) : (
-          sessions.map((session) => {
-            const isActive = session.id === currentSessionId;
+      {/* 3. Navigation Section */}
+      <div className="cams-nav-section">
+        {!isCollapsed && <div className="cams-nav-label">NAVIGATION</div>}
+        <nav className="cams-nav-list" role="navigation">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeTab === item.id;
             return (
-              <div
-                key={session.id}
-                className={`session-item ${isActive ? 'active' : ''}`}
-                onClick={() => onSelectSession(session.id)}
-                id={`session-item-${session.id}`}
-                role="button"
-                tabIndex={0}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    onSelectSession(session.id);
-                  }
-                }}
-                aria-current={isActive ? 'true' : 'false'}
+              <div 
+                key={item.id} 
+                className="cams-nav-item-wrapper"
+                onMouseEnter={() => isCollapsed && setHoveredTab(item.id)}
+                onMouseLeave={() => isCollapsed && setHoveredTab(null)}
               >
-                <span className="session-title" title={session.title}>
-                  {session.title || 'Untitled Query'}
-                </span>
                 <button
-                  className="session-delete-btn"
-                  title="Delete Session"
-                  aria-label={`Delete conversation ${session.title}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDeleteSession(session.id);
-                  }}
+                  className={`cams-nav-item ${isActive ? 'active' : ''}`}
+                  onClick={() => onSelectTab(item.id)}
+                  aria-current={isActive ? 'page' : undefined}
                 >
-                  <Trash2 size={13} aria-hidden="true" />
+                  {isActive && <div className="cams-active-indicator" />}
+                  <Icon size={16} className="cams-nav-icon" />
+                  {!isCollapsed && <span className="cams-nav-text">{item.label}</span>}
                 </button>
+
+                {isCollapsed && hoveredTab === item.id && (
+                  <div className="cams-hover-tooltip" role="tooltip">
+                    {item.label}
+                  </div>
+                )}
               </div>
             );
-          })
-        )}
+          })}
+        </nav>
       </div>
 
-      <div className="sidebar-footer">
-        <div className="status-pill" title="Database status">
-          <span className={`status-dot ${dbInfo.connected ? 'status-dot-online' : 'status-dot-offline'}`} aria-hidden="true"></span>
-          <span>{dbInfo.connected ? `PostgreSQL Live (${dbInfo.tablesCount} Tables)` : 'Database Degraded'}</span>
+      {/* 4. Recent Inquiries */}
+      {!isCollapsed && sessions && sessions.length > 0 && (
+        <div className="sidebar-sessions-section">
+          <div className="cams-nav-label">RECENT INQUIRIES</div>
+          <div className="sidebar-session-list">
+            {sessions.slice(0, 5).map((s) => (
+              <div 
+                key={s.id}
+                className={`sidebar-session-row ${currentSessionId === s.id ? 'active' : ''}`}
+                onClick={() => {
+                  onSelectSession(s.id);
+                  onSelectTab('ai_assistant');
+                }}
+              >
+                <span className="sidebar-session-title">{s.title || 'Inquiry'}</span>
+                <button 
+                  className="session-delete-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteSession(s.id);
+                  }}
+                  title="Delete inquiry"
+                  aria-label="Delete inquiry"
+                >
+                  <Trash2 size={12} />
+                </button>
+              </div>
+            ))}
+          </div>
         </div>
-        <div className="security-notice">
-          <ShieldCheck size={12} aria-hidden="true" />
-          <span>Safe Read-Only Query Layer</span>
-        </div>
+      )}
+
+      <div style={{ flex: 1 }} />
+
+      {/* 5. Lower Area: Status & Profile */}
+      <div className="cams-sidebar-footer">
+        {!isCollapsed ? (
+          <>
+            <div className="sidebar-status-row">
+              <span>System Status</span>
+              <span>
+                <span className="status-dot-connected" />
+                {dbInfo?.connected ? 'Connected' : 'Offline'}
+              </span>
+            </div>
+            <div className="sidebar-status-row" style={{ color: 'var(--color-light-blue)', fontSize: '0.68rem' }}>
+              <span>PostgreSQL Database</span>
+              <span>122 Tables</span>
+            </div>
+
+            <div className="sidebar-user-block">
+              <div className="sidebar-user-info">
+                <div className="sidebar-user-avatar">{userInitials}</div>
+                <div>
+                  <div className="sidebar-user-name">{currentUser?.full_name || 'Administrator'}</div>
+                  <div className="sidebar-user-role">{currentUser?.role || 'ADMIN'}</div>
+                </div>
+              </div>
+              {onLogout && (
+                <button className="sidebar-logout-btn" onClick={onLogout} title="Sign Out">
+                  <LogOut size={14} />
+                </button>
+              )}
+            </div>
+          </>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem' }}>
+            <div className="sidebar-user-avatar" title={currentUser?.full_name || 'User'}>
+              {userInitials}
+            </div>
+          </div>
+        )}
       </div>
     </aside>
   );

@@ -134,27 +134,28 @@ class QueryOrchestrator:
         # Step 7: Result Processing
         msg_text, response_type, processed_data = ResultProcessor.process_result(plan, query_result)
 
-        # Step 8: E2B Sandbox Analytics (Calculations & Charts)
-        # CRITICAL: E2B is ONLY invoked for calculation or chart requests. Never for normal text/table queries.
+        # Step 8: Analytics & Chart Generation (E2B Sandbox / Controlled Engine)
         chart_data = None
         calc_data = None
-        if query_result.get("success") and (plan.output_type in ("calculation", "chart") or plan.operation_type is not None):
+        if query_result.get("success"):
             dataset = query_result.get("data", [])
-            if not dataset:
-                if plan.output_type == "chart" or plan.operation_type == "chart":
+            is_chart_requested = (
+                plan.output_type == "chart" 
+                or plan.operation_type == "chart" 
+                or (message and any(w in message.lower() for w in ("chart", "graph", "plot", "visualize", "visualization", "barchart", "piechart", "linechart", "diagram", "trend", "trends")))
+            )
+            
+            if is_chart_requested:
+                if not dataset:
                     msg_text = "Insufficient data is available to generate this chart."
                     response_type = "text"
                 else:
-                    msg_text = "Insufficient data to perform this calculation."
-                    response_type = "text"
-            else:
-                if plan.output_type == "chart" or plan.operation_type == "chart":
                     chart_res = self.e2b_service.generate_chart_data(
                         chart_type=plan.chart_type or "bar",
                         dataset=dataset,
-                        title=f"{plan.domain.replace('_', ' ').title()} Visualization",
+                        title=f"{plan.target_entity or plan.domain.replace('_', ' ').title()} Chart",
                         x_axis=plan.domain.title(),
-                        y_axis="Score / Metric"
+                        y_axis="Attendance / Metric"
                     )
                     if chart_res.get("success"):
                         chart_data = chart_res.get("chart")
@@ -162,19 +163,23 @@ class QueryOrchestrator:
                         msg_text = f"Here is the {plan.chart_type or 'bar'} chart for {plan.target_entity or plan.domain}:"
                     else:
                         msg_text = chart_res.get("error", "Insufficient data is available to generate this chart.")
-                elif plan.output_type == "calculation":
-                    calc_res = self.e2b_service.execute_analysis(
-                        operation=plan.operation_type or "average",
-                        dataset=dataset
-                    )
-                    if calc_res.get("success"):
-                        calc_data = calc_res.get("metrics")
-                        calc_val = calc_res.get("result")
-                        response_type = "calculation"
-                        op_name = (plan.operation_type or "calculation").title()
-                        msg_text = f"{op_name} result for {plan.target_entity or plan.domain}: {calc_val}"
-                    else:
-                        msg_text = calc_res.get("error", "Insufficient data to perform this calculation.")
+            elif plan.output_type == "calculation" and dataset:
+                calc_res = self.e2b_service.execute_analysis(
+                    operation=plan.operation_type or "average",
+                    dataset=dataset
+                )
+                if calc_res.get("success"):
+                    calc_val = calc_res.get("result")
+                    calc_data = {
+                        "operation": plan.operation_type or "calculation",
+                        "result": calc_val,
+                        "metrics": calc_res.get("metrics")
+                    }
+                    response_type = "calculation"
+                    op_name = (plan.operation_type or "calculation").title()
+                    msg_text = f"{op_name} result for {plan.target_entity or plan.domain}: {calc_val}"
+                else:
+                    msg_text = calc_res.get("error", "Insufficient data to perform this calculation.")
 
         # Step 9: NVIDIA NIM Natural Language Synthesis
         if (

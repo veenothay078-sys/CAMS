@@ -76,12 +76,12 @@ ROLE_TABLE_PERMISSIONS: Dict[str, Set[str]] = {
     UserRole.PRINCIPAL.value: ALLOWED_CHATBOT_TABLES,
     UserRole.HOD.value: ALLOWED_CHATBOT_TABLES - {"fee_records", "payments"},
     UserRole.FACULTY.value: {
-        "students", "courses", "sections", "subject_allocations", "attendance", "attendance_corrections",
+        "students", "courses", "sections", "subject_allocations", "attendance", "attendance_corrections", "staff_attendance",
         "timetable", "internal_marks", "marks", "exams", "exam_hall_tickets", "exam_seating_arrangements",
         "faculty_profiles", "leaves", "notices", "academic_years", "academic_calendar_events", "academic_calendars", "degrees", "users"
     },
     UserRole.STUDENT.value: {
-        "students", "courses", "sections", "attendance", "attendance_corrections",
+        "students", "courses", "sections", "attendance", "attendance_corrections", "staff_attendance",
         "timetable", "internal_marks", "marks", "exams", "exam_hall_tickets", "exam_seating_arrangements",
         "fee_records", "fee_structure", "notices", "academic_years", "academic_calendar_events", "academic_calendars", "degrees", "faculty_profiles", "users"
     },

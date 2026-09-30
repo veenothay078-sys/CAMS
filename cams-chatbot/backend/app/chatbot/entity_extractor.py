@@ -8,7 +8,7 @@ class EntityExtractor:
     """
 
     # Supported entities regex rules
-    ROLL_NO_PATTERN = re.compile(r"\b([0-9]{2}[A-Z]{2,4}[0-9]{2,4})\b", re.IGNORECASE)
+    ROLL_NO_PATTERN = re.compile(r"\b([A-Z]{2,4}-[0-9]{3,4}|[0-9]{2}[A-Z]{2,4}[0-9]{2,4})\b", re.IGNORECASE)
     SEMESTER_PATTERN = re.compile(r"\b(?:semester|sem)\s*([1-8])\b|\b([1-8])(?:st|nd|rd|th)\s*sem(?:ester)?\b", re.IGNORECASE)
     YEAR_PATTERN = re.compile(r"\b(first|second|third|fourth|fifth)\s*year\b", re.IGNORECASE)
     WEEKDAY_PATTERN = re.compile(r"\b(monday|tuesday|wednesday|thursday|friday|saturday)\b", re.IGNORECASE)
@@ -19,10 +19,9 @@ class EntityExtractor:
     # Common names/keywords pattern for student detection (prioritizing explicit student IDs/names)
     STUDENT_NAME_PATTERN = re.compile(
         r"\b(student\s*[0-9]+)\b|"
+        r"\b(?:profile|details|marks|attendance|record|info)\s+for\s+(?:student\s+)?([A-Za-z0-9_-]+)\b|"
         r"\b([A-Za-z0-9_]+)'s\s+(?:attendance|mark|marks|grade|profile|result|fee|fees|info|details)\b|"
-        r"\b(?:how about|what about|and for)\s+([A-Za-z0-9_]+(?:\s+[A-Za-z0-9_]+)?)\b|"
-        r"\b(?:for|about|of|regarding|with)\s+([A-Za-z0-9_]+(?:\s+[A-Za-z0-9_]+)?)\b|"
-        r"\bstudent\s+([A-Za-z0-9_]+)\b",
+        r"\bstudent\s+([A-Za-z0-9_-]+)\b",
         re.IGNORECASE
     )
 
@@ -37,9 +36,11 @@ class EntityExtractor:
     }
 
     STOPWORDS = {
-        "my", "the", "a", "this", "our", "all", "details", "details for",
-        "info", "information", "records", "his", "her", "their", "student",
-        "attendance", "marks", "exam", "fees", "timetable"
+        "my", "the", "a", "an", "this", "our", "all", "details", "details for",
+        "info", "information", "records", "his", "her", "their", "student", "students",
+        "attendance", "marks", "exam", "exams", "fees", "fee", "timetable",
+        "profile", "schedule", "result", "results", "grade", "grades", "subject", "courses",
+        "particular", "specific", "certain", "given", "individual", "single", "someone", "anyone"
     }
 
     def extract_entities(self, text: str, session_context: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
@@ -91,7 +92,8 @@ class EntityExtractor:
                 cleaned_name = candidate.strip()
                 if cleaned_name.lower().startswith("details for "):
                     cleaned_name = cleaned_name[12:].strip()
-                if cleaned_name.lower() not in self.STOPWORDS and len(cleaned_name) > 1:
+                tokens = cleaned_name.lower().split()
+                if not any(t in self.STOPWORDS for t in tokens) and not self.PRONOUN_PATTERN.search(cleaned_name) and len(cleaned_name) > 1:
                     entities["student_name"] = cleaned_name
                     break
 

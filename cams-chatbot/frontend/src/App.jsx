@@ -1,7 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import Sidebar from './components/Sidebar';
+import TopHeader from './components/TopHeader';
 import ChatArea from './components/ChatArea';
+import OverviewModule from './components/modules/OverviewModule';
+import CoursesModule from './components/modules/CoursesModule';
+import UsersModule from './components/modules/UsersModule';
+import AttendanceModule from './components/modules/AttendanceModule';
+import TimetableModule from './components/modules/TimetableModule';
+import LeavesModule from './components/modules/LeavesModule';
+import NotificationsModule from './components/modules/NotificationsModule';
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || '/api/v1';
 const HEALTH_URL = API_BASE.startsWith('http') 
@@ -18,6 +26,7 @@ axios.interceptors.request.use((config) => {
 });
 
 export default function App() {
+  const [activeTab, setActiveTab] = useState('overview');
   const [sessions, setSessions] = useState([]);
   const [currentSessionId, setCurrentSessionId] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -25,6 +34,7 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const [dbInfo, setDbInfo] = useState({
     connected: true,
@@ -34,7 +44,7 @@ export default function App() {
   const [userProfile, setUserProfile] = useState({
     id: 'usr_admin',
     email: 'admin@gmail.com',
-    full_name: 'System Administrator',
+    full_name: 'Administrator',
     role: 'ADMIN'
   });
 
@@ -49,6 +59,18 @@ export default function App() {
     fetchHealth();
     fetchDemoUsers();
     initAuth();
+  }, []);
+
+  // Keyboard shortcut Ctrl+B or Cmd+B to toggle sidebar collapse
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+        e.preventDefault();
+        setIsCollapsed((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
 
   // 2. Load Messages when Active Session changes
@@ -113,7 +135,6 @@ export default function App() {
         role: res.data.role
       });
       setError(null);
-      // Reload sessions for the switched user
       await fetchSessions();
     } catch (err) {
       setError(`Failed to switch to user ${email}.`);
@@ -167,6 +188,7 @@ export default function App() {
       setCurrentSessionId(res.data.id);
       setMessages([]);
       setError(null);
+      setActiveTab('ai_assistant');
       setSidebarOpen(false);
     } catch (err) {
       setError('Failed to create new conversation session.');
@@ -183,12 +205,6 @@ export default function App() {
       }
     } catch (err) {
       setError('Could not delete session.');
-    }
-  };
-
-  const handleClearMessages = () => {
-    if (window.confirm('Are you sure you want to clear the conversation messages in this session?')) {
-      setMessages([]);
     }
   };
 
@@ -278,10 +294,15 @@ export default function App() {
     }
   };
 
+  const handleAskAI = (promptText) => {
+    setActiveTab('ai_assistant');
+    handleSendMessage(promptText);
+  };
+
   const currentSession = sessions.find(s => s.id === currentSessionId);
 
   return (
-    <div className="app-container">
+    <div className={`cams-application-layout ${isCollapsed ? 'sidebar-is-collapsed' : 'sidebar-is-expanded'}`}>
       {/* Mobile Drawer Backdrop */}
       {sidebarOpen && (
         <div 
@@ -291,42 +312,113 @@ export default function App() {
         />
       )}
 
+      {/* Left Sidebar (Deep Forest Green: 256px expanded, 72px collapsed) */}
       <Sidebar
+        activeTab={activeTab}
+        onSelectTab={(tabId) => setActiveTab(tabId)}
         sessions={sessions}
         currentSessionId={currentSessionId}
         onSelectSession={(id) => {
           setCurrentSessionId(id);
+          setActiveTab('ai_assistant');
           setSidebarOpen(false);
         }}
         onNewSession={handleNewSession}
         onDeleteSession={handleDeleteSession}
         dbInfo={dbInfo}
-        userProfile={userProfile}
-        demoUsers={demoUsers}
-        onSwitchUser={handleSwitchUser}
-        onLogout={handleLogout}
         isOpen={sidebarOpen}
         onClose={() => setSidebarOpen(false)}
+        isCollapsed={isCollapsed}
+        onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
+        currentUser={userProfile}
+        onLogout={handleLogout}
       />
 
-      <ChatArea
-        currentSession={currentSession}
-        messages={messages}
-        input={input}
-        setInput={setInput}
-        onSendMessage={handleSendMessage}
-        onRetry={handleRetryMessage}
-        onClearMessages={handleClearMessages}
-        loading={loading}
-        error={error}
-        onClearError={() => setError(null)}
-        userProfile={userProfile}
-        demoUsers={demoUsers}
-        onSwitchUser={handleSwitchUser}
-        onLogout={handleLogout}
-        dbInfo={dbInfo}
-        onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
-      />
+      {/* Main Workspace (Light/Cool Lavender Tint) */}
+      <div className="main-workspace-wrapper">
+        {/* Top Header Bar */}
+        <TopHeader
+          activeTab={activeTab}
+          onSelectTab={(tabId) => setActiveTab(tabId)}
+          dbInfo={dbInfo}
+          userProfile={userProfile}
+          demoUsers={demoUsers}
+          onSwitchUser={handleSwitchUser}
+          onLogout={handleLogout}
+          onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
+          isCollapsed={isCollapsed}
+          onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
+        />
+
+        {/* Workspace Body with subtle fade/slide animation */}
+        <main className="workspace-main-content">
+          <div key={activeTab} className="cams-page-transition">
+            {activeTab === 'overview' && (
+              <OverviewModule 
+                onAskAI={handleAskAI}
+                onSelectTab={setActiveTab}
+                currentUser={userProfile}
+              />
+            )}
+
+            {activeTab === 'ai_assistant' && (
+              <ChatArea
+                currentSession={currentSession}
+                messages={messages}
+                input={input}
+                setInput={setInput}
+                onSendMessage={handleSendMessage}
+                onRetry={handleRetryMessage}
+                loading={loading}
+                error={error}
+                onClearError={() => setError(null)}
+              />
+            )}
+
+            {activeTab === 'courses' && (
+              <CoursesModule 
+                onAskAI={handleAskAI} 
+                currentUser={userProfile}
+              />
+            )}
+
+            {activeTab === 'users' && (
+              <UsersModule 
+                onAskAI={handleAskAI} 
+                currentUser={userProfile}
+              />
+            )}
+
+            {activeTab === 'attendance' && (
+              <AttendanceModule 
+                onAskAI={handleAskAI} 
+                currentUser={userProfile}
+              />
+            )}
+
+            {activeTab === 'timetable' && (
+              <TimetableModule 
+                onAskAI={handleAskAI} 
+                currentUser={userProfile}
+              />
+            )}
+
+            {activeTab === 'leaves' && (
+              <LeavesModule 
+                onAskAI={handleAskAI} 
+                currentUser={userProfile}
+              />
+            )}
+
+            {activeTab === 'notifications' && (
+              <NotificationsModule 
+                onAskAI={handleAskAI} 
+                currentUser={userProfile}
+              />
+            )}
+          </div>
+        </main>
+      </div>
     </div>
   );
 }

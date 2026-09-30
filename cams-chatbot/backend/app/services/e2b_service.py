@@ -450,38 +450,78 @@ print("__CHART__" + json.dumps(res))
     ) -> Dict[str, Any]:
         """Generates chart points locally with complete formatting."""
         data_points = []
-        for r in dataset[:15]:
-            x_val = (
-                r.get("subject_name") or r.get("course_name") or r.get("month") or
-                r.get("weekday") or r.get("date") or r.get("code") or r.get("name") or
-                r.get("title") or r.get("full_name") or r.get("fee_type") or "Item"
-            )
-            x_str = str(x_val).strip()[:30]
-
-            y_val = (
-                r.get("percentage") or r.get("attendance") or r.get("total_mark") or
-                r.get("internal_exam_mark") or r.get("mark") or r.get("marks") or
-                r.get("amount") or r.get("credits") or r.get("attendance_percentage") or
-                r.get("value")
-            )
-            if y_val is None:
-                # Find any numeric value
-                for k, v in r.items():
-                    if isinstance(v, (int, float)) and not isinstance(v, bool):
-                        y_val = v
+        
+        # Check if dataset has any numeric field (including Decimal from PostgreSQL)
+        has_numeric = False
+        for r in dataset[:10]:
+            for k, v in r.items():
+                if v is not None and not isinstance(v, bool):
+                    try:
+                        float(v)
+                        has_numeric = True
                         break
+                    except (ValueError, TypeError):
+                        pass
+            if has_numeric:
+                break
 
-            try:
-                y_num = float(y_val) if y_val is not None else 1.0
-            except (ValueError, TypeError):
-                y_num = 1.0
+        if not has_numeric and len(dataset) > 0:
+            # Auto-aggregate frequency counts by primary category (e.g. status, designation, role)
+            freq_map: Dict[str, int] = {}
+            for r in dataset:
+                label = (
+                    r.get("status") or r.get("attendance_status") or r.get("designation") or
+                    r.get("role") or r.get("faculty_name") or r.get("department_name") or
+                    r.get("course_name") or r.get("category") or "General"
+                )
+                lbl_str = str(label).strip()
+                freq_map[lbl_str] = freq_map.get(lbl_str, 0) + 1
 
-            data_points.append({
-                "label": x_str,
-                "value": round(y_num, 2),
-                "x": x_str,
-                "y": round(y_num, 2)
-            })
+            for lbl, cnt in list(freq_map.items())[:15]:
+                data_points.append({
+                    "label": lbl,
+                    "value": cnt,
+                    "x": lbl,
+                    "y": cnt
+                })
+        else:
+            for r in dataset[:15]:
+                x_val = (
+                    r.get("attendance_status") or r.get("semester_label") or r.get("department_name") or
+                    r.get("designation_label") or r.get("weekday_label") or r.get("fee_label") or
+                    r.get("subject_name") or r.get("course_name") or r.get("faculty_name") or
+                    r.get("student_name") or r.get("month") or r.get("weekday") or r.get("date") or
+                    r.get("code") or r.get("name") or r.get("title") or r.get("full_name") or
+                    r.get("fee_type") or r.get("status") or "Item"
+                )
+                x_str = str(x_val).strip()[:30]
+
+                y_val = (
+                    r.get("record_count") or r.get("course_count") or r.get("average_marks") or
+                    r.get("student_count") or r.get("faculty_count") or r.get("class_count") or
+                    r.get("fee_amount") or r.get("percentage") or r.get("attendance") or
+                    r.get("total_mark") or r.get("internal_exam_mark") or r.get("mark") or
+                    r.get("marks") or r.get("amount") or r.get("credits") or
+                    r.get("attendance_percentage") or r.get("count") or r.get("value")
+                )
+                if y_val is None:
+                    # Find any numeric value
+                    for k, v in r.items():
+                        if isinstance(v, (int, float)) and not isinstance(v, bool):
+                            y_val = v
+                            break
+
+                try:
+                    y_num = float(y_val) if y_val is not None else 1.0
+                except (ValueError, TypeError):
+                    y_num = 1.0
+
+                data_points.append({
+                    "label": x_str,
+                    "value": round(y_num, 2),
+                    "x": x_str,
+                    "y": round(y_num, 2)
+                })
 
         return {
             "success": True,
