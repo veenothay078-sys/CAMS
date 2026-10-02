@@ -1,0 +1,39 @@
+services:
+  # 1. FastAPI Backend Web Service
+  - type: web
+    name: cams-backend
+    runtime: python
+    plan: free
+    rootDir: cams-chatbot/backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: cams-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: CORS_ORIGINS
+        value: "*"
+
+  # 2. React Frontend Static Site
+  - type: web
+    name: cams-frontend
+    runtime: static
+    plan: free
+    rootDir: cams-chatbot/frontend
+    buildCommand: npm run build
+    staticPublishPath: dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        value: https://cams-backend.onrender.com/api/v1
+
+databases:
+  # 3. PostgreSQL Managed Database
+  - name: cams-db
+    databaseName: cams
+    user: cams_user
+    plan: free
