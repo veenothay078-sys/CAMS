@@ -168,13 +168,13 @@ export default function Sidebar({
             <div className="sidebar-status-row">
               <span>System Status</span>
               <span>
-                <span className="status-dot-connected" />
+                <span className={dbInfo?.connected ? "status-dot-connected" : "status-dot-offline"} />
                 {dbInfo?.connected ? 'Connected' : 'Offline'}
               </span>
             </div>
             <div className="sidebar-status-row" style={{ color: 'var(--color-light-blue)', fontSize: '0.68rem' }}>
               <span>PostgreSQL Database</span>
-              <span>122 Tables</span>
+              <span>{dbInfo?.tablesCount !== undefined ? `${dbInfo.tablesCount} Tables` : '122 Tables'}</span>
             </div>
 
             <div className="sidebar-user-block">

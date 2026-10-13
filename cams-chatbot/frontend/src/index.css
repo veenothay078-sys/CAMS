@@ -421,6 +421,15 @@ body {
   margin-right: 5px;
 }
 
+.status-dot-offline {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #EF4444;
+  margin-right: 5px;
+}
+
 .sidebar-user-block {
   display: flex;
   align-items: center;

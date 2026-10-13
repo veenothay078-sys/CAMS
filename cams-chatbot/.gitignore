@@ -43,6 +43,7 @@ yarn-error.log*
 *.log
 *.sqlite
 *.sql
+!*cams_db_dump.sql
 *.zip
 .DS_Store
 Thumbs.db

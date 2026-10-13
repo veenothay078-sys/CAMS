@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 from app.core.config import settings
 from app.core.logging import setup_logging, logger
 from app.api.v1.api import api_router
-from app.database.connection import check_db_connectivity
+from app.database.connection import check_db_connectivity, auto_seed_database_if_empty
 from app.schemas.health import HealthResponse
 
 # Initialize structured logging
@@ -79,6 +79,10 @@ def on_startup():
     db_info = check_db_connectivity()
     if db_info["connected"]:
         logger.info(f"PostgreSQL connection verified! Detected {db_info['tables_count']} tables in CAMS database.")
+        if db_info["tables_count"] == 0:
+            logger.info("Database is empty (0 tables). Running auto_seed_database_if_empty()...")
+            seed_result = auto_seed_database_if_empty()
+            logger.info(f"Database auto-seeding result: {seed_result}")
     else:
         logger.warning(f"PostgreSQL connection could not be established: {db_info['error']}")
 

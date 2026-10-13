@@ -4,7 +4,7 @@ from fastapi import APIRouter
 from pydantic import BaseModel
 from typing import Optional
 from app.core.config import settings
-from app.database.connection import check_db_connectivity
+from app.database.connection import check_db_connectivity, auto_seed_database_if_empty
 from app.security.query_policy import QueryPolicy
 from app.schemas.health import HealthResponse
 
@@ -57,3 +57,14 @@ def get_database_health():
         latency_ms=elapsed_ms,
         error=db_status["error"]
     )
+
+
+@router.post("/health/init-db")
+def initialize_database():
+    """
+    Initializes PostgreSQL tables and seed data if the database is currently empty.
+    Useful for cloud deployments (e.g. Render) to initialize schema automatically or on demand.
+    """
+    result = auto_seed_database_if_empty()
+    return result
+
